@@ -1,3 +1,20 @@
+#######################################################
+
+#  Retrieves articles from Berkeleyside news site for analysis
+#  Please do not change the 5 second delays, so as not to overwhelm site
+#
+#  Code is based off ssterman and radiolarian 's AO3 scraper 
+#  written by ssterman
+
+# Two types of usage:  get ids and urls, or input a csv with ids and urls to get article data
+# usage:
+
+# python berkeleyside_scraper.py --outcsv city_urls
+# python berkeleyside_scraper.py city_article_urls.csv --outcsv city_articles 
+
+#######################################################
+
+
 from bs4 import BeautifulSoup
 import re
 import time
@@ -16,11 +33,7 @@ cur_page = 1
 
 #######################################################
 
-# Two types of usage:  get ids and urls, or input a csv with ids and urls to get article data
-# usage:
-
-# python berkeleyside_scraper.py --outcsv city_urls
-# python berkeleyside_scraper.py city_article_urls.csv --outcsv city_articles 
+# Basic usage
 
 #######################################################
 
@@ -49,6 +62,13 @@ def make_readme(csv_name):
 	with open(csv_name + "_readme.txt", "w") as text_file:
 		text_file.write(csv_name + " was retreived on: " + str(datetime.datetime.now()))
 
+def get_soup(url, responsiveness):
+	req = requests.get(url)
+	soup = BeautifulSoup(req.text, "lxml")
+	# some responsiveness in the "UI"
+	sys.stdout.write('.' + responsiveness + '.')
+	sys.stdout.flush()
+	return soup
 
 #######################################################
 # These functions will generate the [id, url] csv
@@ -81,16 +101,6 @@ def error_page(soup):
 	if soup.find(class_="error-404 not-found main-page") is not None:
 		return True
 	return False
-
-
-def get_soup(url, responsiveness):
-	req = requests.get(url)
-	soup = BeautifulSoup(req.text, "lxml")
-	# some responsiveness in the "UI"
-	sys.stdout.write('.' + responsiveness + '.')
-	sys.stdout.flush()
-	return soup
-
 
 # currently must manually update the category in the globals 
 # to change desired category
