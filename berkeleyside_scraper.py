@@ -122,7 +122,7 @@ def get_list_of_articles(csv_out):
 		cont = True
 		while(cont):
 			# 5 second delay between requests to be a good citizen
-			time.sleep(1)
+			time.sleep(5)
 			archive_url = base_url + "/" + c + "/page/" + str(cur_page)
 			soup = get_soup(archive_url, str(cur_page))
 			if (error_page(soup)):
@@ -215,7 +215,7 @@ def get_data_for_articles(incsv, restart, csv_out):
 				for row in reader:
 					if not already_seen(row[0]):
 						process_article(row[0], row[1], writer)
-						time.sleep(1)
+						time.sleep(5)
 						seen_id_list.append(row[0])
 
 			else: 
