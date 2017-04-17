@@ -79,8 +79,8 @@ def get_soup(url, responsiveness):
 
 def write_to_csv(ids, urls, csv_name):
 	with open(csv_name + ".csv", 'a') as csvfile:
-	    wr = csv.writer(csvfile, delimiter=',')
-	    for i in range(0, len(ids)):
+		wr = csv.writer(csvfile, delimiter=',')
+		for i in range(0, len(ids)):
 			wr.writerow([ids[i], urls[i]])
 
 def get_ids(soup):
@@ -95,6 +95,13 @@ def get_ids(soup):
 		id_ = a.get('id')
 		id_ = id_[5:]
 		ids.append(id_)
+
+	# pubdates = soup.find_all(class_ = "entry-date published")
+	# dates = []
+	# for d in pubdates:
+	# 	date = d.get('datetime')
+	# 	dates.append(date)
+	
 	return ids, urls
 
 def error_page(soup):
@@ -110,15 +117,23 @@ def get_list_of_articles(csv_out):
 	# get_user_params()
 	make_readme(csv_name)
 	for c in categories:
-		while(True):
+		print("getting category: " + c + "\n")
+		cur_page = 1
+		cont = True
+		while(cont):
 			# 5 second delay between requests to be a good citizen
-			time.sleep(5)
+			time.sleep(1)
 			archive_url = base_url + "/" + c + "/page/" + str(cur_page)
 			soup = get_soup(archive_url, str(cur_page))
 			if (error_page(soup)):
-				break
+				cont = False
 			ids, urls = get_ids(soup)
 			write_to_csv(ids, urls, csv_name)
+			for u in urls:
+				try:
+					u.index("2017") 
+				except:
+					cont = False
 			cur_page = cur_page + 1
 	print "That's all, folks"
 
@@ -170,7 +185,7 @@ def get_title(soup):
 	return unidecode(soup.find(class_="entry-title").text)
 
 def process_article(_id, article_url, writer):
-	soup = get_soup(article_url, article_url + "\n") 
+	soup = get_soup(article_url, _id + "\n") 
 	data = [_id, article_url, get_title(soup), get_tags(soup), get_sections(soup), get_author(soup), get_date(soup), get_text(soup)]
 	write_article_to_csv(data, writer)
 
@@ -200,7 +215,7 @@ def get_data_for_articles(incsv, restart, csv_out):
 				for row in reader:
 					if not already_seen(row[0]):
 						process_article(row[0], row[1], writer)
-						time.sleep(5)
+						time.sleep(1)
 						seen_id_list.append(row[0])
 
 			else: 
