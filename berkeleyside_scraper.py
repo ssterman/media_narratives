@@ -27,9 +27,9 @@ from unidecode import unidecode
 
 
 base_url = "http://www.berkeleyside.com"
-categories = ["city", "arts", "business", "community", "crime-safety", "nosh", "real-estate", "schools", "obituaries", "opinion"]
-chosen_category = 0
+categories = ["city", "arts", "business", "community", "crime-safety", "schools"] #, "obituaries", "opinion", "nosh", "real-estate"]
 cur_page = 1
+seen_id_list = []
 
 #######################################################
 
@@ -109,16 +109,17 @@ def get_list_of_articles(csv_out):
 	global cur_page
 	# get_user_params()
 	make_readme(csv_name)
-	while(True):
-		# 5 second delay between requests to be a good citizen
-		time.sleep(5)
-		archive_url = base_url + "/" + categories[chosen_category] + "/page/" + str(cur_page)
-		soup = get_soup(archive_url, str(cur_page))
-		if (error_page(soup)):
-			break
-		ids, urls = get_ids(soup)
-		write_to_csv(ids, urls, csv_name)
-		cur_page = cur_page + 1
+	for c in categories:
+		while(True):
+			# 5 second delay between requests to be a good citizen
+			time.sleep(5)
+			archive_url = base_url + "/" + c + "/page/" + str(cur_page)
+			soup = get_soup(archive_url, str(cur_page))
+			if (error_page(soup)):
+				break
+			ids, urls = get_ids(soup)
+			write_to_csv(ids, urls, csv_name)
+			cur_page = cur_page + 1
 	print "That's all, folks"
 
 #######################################################
@@ -139,7 +140,7 @@ def get_list_of_articles(csv_out):
 
 def write_article_to_csv(data, writer):
 	try:
-		writer.writerow([data[0]] + [data[1]] + [data[2]] + [data[3]] + [data[4]])
+		writer.writerow([data[0]] + [data[1]] + [data[2]] + [data[3]] + [data[4]] + [data[5]] + [data[6]] + [data[7]])
 	except:
 		print("article writing ERROR")
 	print("done.")
@@ -165,9 +166,12 @@ def get_author(soup):
 def get_date(soup):
 	return soup.find(property="article:published_time").get('content')
 
-def process_article(article_url, writer):
+def get_title(soup):
+	return unidecode(soup.find(class_="entry-title").text)
+
+def process_article(_id, article_url, writer):
 	soup = get_soup(article_url, article_url + "\n") 
-	data = [get_tags(soup), get_sections(soup), get_author(soup), get_date(soup), get_text(soup)]
+	data = [_id, article_url, get_title(soup), get_tags(soup), get_sections(soup), get_author(soup), get_date(soup), get_text(soup)]
 	write_article_to_csv(data, writer)
 
 def process_id(article_id, restart, found):
@@ -178,7 +182,15 @@ def process_id(article_id, restart, found):
 	else:
 		return False
 
+
+def already_seen(_id):
+	 global seen_id_list
+	 return _id in seen_id_list
+
+
 def get_data_for_articles(incsv, restart, csv_out):
+	global seen_id_list
+
 	make_readme(csv_out)
 	with open(csv_out, 'a') as f_out:
 		writer = csv.writer(f_out)
@@ -186,18 +198,22 @@ def get_data_for_articles(incsv, restart, csv_out):
 			reader = csv.reader(f_in)
 			if restart is '':
 				for row in reader:
-					process_article(row[1], writer)
-					time.sleep(5)
+					if not already_seen(row[0]):
+						process_article(row[0], row[1], writer)
+						time.sleep(5)
+						seen_id_list.append(row[0])
+
 			else: 
 				found_restart = False
 				for row in reader:
-					found_restart = process_id(row[0], restart, found_restart)
-					if found_restart:
-						process_article(row[1], writer)
-						time.sleep(5)
-					else:
-						print "skipping already processed article"
-
+					if not already_seen(row[0]):
+						found_restart = process_id(row[0], restart, found_restart)
+						if found_restart:
+							process_article(row[0], row[1], writer)
+							time.sleep(5)
+						else:
+							print "skipping already processed article"
+						seen_id_list.append(row[0])
 
 
 #######################################################
